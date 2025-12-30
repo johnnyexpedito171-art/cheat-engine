@@ -1,3 +1,3 @@
-APP_ABI :=  x86 armeabi-v7a arm64-v8a
-
-
+APP_ABI := x86_64
+APP_PLATFORM := android-21
+APP_PIE := true
