@@ -219,7 +219,7 @@ char *PTraceToString(int request)
 
 
 //Implementation for consistency with Android Studio.
-uintptr_t safe_ptrace(int request, pid_t pid, void * addr, void * data)
+uintptr_t safe_ptrace(int request, pid_t pid, (void*)(uintptr_t)(void * addr), void * data)
 {
 #ifdef TRACEPTRACE
  // debug_log("ATTACH_TO_ACCESS_MEMORY=%d\n", ATTACH_TO_ACCESS_MEMORY);
@@ -243,7 +243,7 @@ uintptr_t safe_ptrace(int request, pid_t pid, void * addr, void * data)
 int ptrace_attach_andwait(int pid)
 //call this for quick attach/detach purposes. returns <0 on error, else the attached tid (usually just pid)
 {
-  if (safe_ptrace(PTRACE_ATTACH, pid,0,0)==0)
+  if (safe_ptrace(PTRACE_ATTACH, pid, (void*)(uintptr_t)(0), 0)==0)
   {
     int status;
     while (1)
@@ -256,7 +256,7 @@ int ptrace_attach_andwait(int pid)
 
         //not a sigstop
         debug_log("ptrace_attach_andwait:Received stop with signal %d instead of %d\n", WSTOPSIG(status), SIGSTOP);
-        safe_ptrace(PTRACE_CONT, pid, (void*)0, (void*)(uint64_t)WSTOPSIG(status));
+        safe_ptrace(PTRACE_CONT, pid, (void*)(uintptr_t)((void*))0, (void*)(uint64_t)WSTOPSIG(status));
         continue;
       }
 
@@ -420,7 +420,7 @@ int getBreakpointCapabilities(int tid, uint8_t *maxBreakpointCount, uint8_t *max
   HBP_RESOURCE_INFO hwbpcap;
 
   memset(&hwbpcap, 0, sizeof(HBP_RESOURCE_INFO));
-  if (safe_ptrace(PTRACE_GETHBPREGS, tid, 0, &hwbpcap)==0)
+  if (safe_ptrace(PTRACE_GETHBPREGS, tid, (void*)(uintptr_t)(0), &hwbpcap)==0)
   {
 
     *maxBreakpointCount=hwbpcap.num_brps;
@@ -441,7 +441,7 @@ int getBreakpointCapabilities(int tid, uint8_t *maxBreakpointCount, uint8_t *max
   iov.iov_base=&hwd;
   iov.iov_len=sizeof(hwd);
 
-  if (safe_ptrace(PTRACE_GETREGSET, tid, (void*)NT_ARM_HW_WATCH, &iov)==0)
+  if (safe_ptrace(PTRACE_GETREGSET, tid, (void*)(uintptr_t)((void*))NT_ARM_HW_WATCH, &iov)==0)
   {
     debug_log("NT_ARM_HW_WATCH: dbg_info=%x:\n", hwd.dbg_info);
     *maxWatchpointCount=hwd.dbg_info & 0xf;
@@ -454,7 +454,7 @@ int getBreakpointCapabilities(int tid, uint8_t *maxBreakpointCount, uint8_t *max
 
   iov.iov_base=&hwd;
   iov.iov_len=sizeof(hwd);
-  if (safe_ptrace(PTRACE_GETREGSET, tid, (void*)NT_ARM_HW_BREAK, &iov)==0)
+  if (safe_ptrace(PTRACE_GETREGSET, tid, (void*)(uintptr_t)((void*))NT_ARM_HW_BREAK, &iov)==0)
   {
     debug_log("NT_ARM_HW_BREAK: dbg_info=%x:\n", hwd.dbg_info);
     *maxBreakpointCount=hwd.dbg_info & 0xf;
@@ -532,7 +532,7 @@ int StartDebug(HANDLE hProcess)
           pthread_mutex_lock(&memorymutex); //so there's no ptrace_attach busy when attaching after opening and reading memory
 
 
-          if (safe_ptrace(PTRACE_ATTACH, tid,0,0)<0)
+          if (safe_ptrace(PTRACE_ATTACH, tid, (void*)(uintptr_t)(0), 0)<0)
             debug_log("Failed to attach to thread %d\n", tid);
           else
           {
@@ -565,7 +565,7 @@ int StartDebug(HANDLE hProcess)
                 debug_log("number of instruction breakpoints: %d\n", createProcessEvent.maxBreakpointCount);
                 debug_log("number of data breakpoints:        %d\n", createProcessEvent.maxWatchpointCount);
 
-                safe_ptrace(PTRACE_CONT, createProcessEvent.threadid, 0,0);
+                safe_ptrace(PTRACE_CONT, createProcessEvent.threadid, (void*)(uintptr_t)(0), 0);
 
                 PThreadData _td=GetThreadData(p, createProcessEvent.threadid);
 
@@ -758,7 +758,7 @@ int SetBreakpoint(HANDLE hProcess, int tid, int debugreg, void *address, int bpt
         memset(&iov, 0, sizeof(iov));
         iov.iov_base=&regset;
         iov.iov_len=sizeof(regset);
-        int i=safe_ptrace(PTRACE_GETREGSET, wtid, (void*)NT_PRSTATUS, &iov);
+        int i=safe_ptrace(PTRACE_GETREGSET, wtid, (void*)(uintptr_t)((void*))NT_PRSTATUS, &iov);
 
         debug_log("PTRACE_GETREGSET returned %d\n", i);
         debug_log("iov.iov_len=%d\n", (int)iov.iov_len);  //272=64 bit app. 72=32 bit app
@@ -810,7 +810,7 @@ int SetBreakpoint(HANDLE hProcess, int tid, int debugreg, void *address, int bpt
 
         iov.iov_base=&hwd;
         iov.iov_len=sizeof(hwd);
-        i=safe_ptrace(PTRACE_GETREGSET, wtid, (void*)NT_ARM_HW_WATCH, &iov);
+        i=safe_ptrace(PTRACE_GETREGSET, wtid, (void*)(uintptr_t)((void*))NT_ARM_HW_WATCH, &iov);
 
         if (i==0)
           maxWatchCount=hwd.dbg_info & 0xf;
@@ -820,7 +820,7 @@ int SetBreakpoint(HANDLE hProcess, int tid, int debugreg, void *address, int bpt
 
         iov.iov_base=&hwd;
         iov.iov_len=sizeof(hwd);
-        i=safe_ptrace(PTRACE_GETREGSET, wtid, (void*)NT_ARM_HW_BREAK, &iov);
+        i=safe_ptrace(PTRACE_GETREGSET, wtid, (void*)(uintptr_t)((void*))NT_ARM_HW_BREAK, &iov);
         if (i==0)
           maxBreakCount=hwd.dbg_info & 0xf;
 
@@ -879,7 +879,7 @@ int SetBreakpoint(HANDLE hProcess, int tid, int debugreg, void *address, int bpt
 
         debug_log("Caling PTRACE_GETREGSET for bplist %d\n", bplist);
         debug_log("iov.iov_len=%d\n", iov.iov_len);
-        i=safe_ptrace(PTRACE_GETREGSET, wtid, (void*)(size_t)bplist, &iov);
+        i=safe_ptrace(PTRACE_GETREGSET, wtid, (void*)(uintptr_t)((void*))(size_t)bplist, &iov);
 
         debug_log("PTRACE_GETREGSET returned %d\n", i);
 
@@ -921,7 +921,7 @@ int SetBreakpoint(HANDLE hProcess, int tid, int debugreg, void *address, int bpt
         debug_log("Caling PTRACE_SETREGSET\n", bplist);
 
 
-        i=safe_ptrace(PTRACE_SETREGSET, wtid, (void*)(size_t)bplist, &iov);
+        i=safe_ptrace(PTRACE_SETREGSET, wtid, (void*)(uintptr_t)((void*))(size_t)bplist, &iov);
 
         debug_log("set=%d",i);
         if (i==-1)
@@ -936,7 +936,7 @@ int SetBreakpoint(HANDLE hProcess, int tid, int debugreg, void *address, int bpt
 
         memset(&hwd, 0, sizeof(hwd));
 
-        i=safe_ptrace(PTRACE_GETREGSET, wtid, (void*)(size_t)bplist, &iov);
+        i=safe_ptrace(PTRACE_GETREGSET, wtid, (void*)(uintptr_t)((void*))(size_t)bplist, &iov);
 
         debug_log("after:\n");
         if (bplist==NT_ARM_HW_BREAK)
@@ -973,7 +973,7 @@ int SetBreakpoint(HANDLE hProcess, int tid, int debugreg, void *address, int bpt
 
         val=0;
 
-        if (safe_ptrace(PTRACE_GETHBPREGS, wtid, 0, &val)==0)
+        if (safe_ptrace(PTRACE_GETHBPREGS, wtid, (void*)(uintptr_t)(0), &val)==0)
         {
           int i;
           unsigned int hwbpreg;
@@ -987,17 +987,17 @@ int SetBreakpoint(HANDLE hProcess, int tid, int debugreg, void *address, int bpt
           {
             //execute
             void *rv=NULL;
-           // safe_ptrace(PTRACE_SETHBPREGS, wtid, bpindex, &rv);
-           // safe_ptrace(PTRACE_SETHBPREGS, wtid, (void*)(uintptr_t)(bpindex+1), &rv);
+           // safe_ptrace(PTRACE_SETHBPREGS, wtid, (void*)(uintptr_t)(bpIndex), &rv);
+           // safe_ptrace(PTRACE_SETHBPREGS, wtid, (void*)(uintptr_t)(bpIndex+1), &rv);
 
 
-            i=safe_ptrace(PTRACE_GETHBPREGS, wtid, (void*)(uintptr_t)bpindex, &rv);
+            i=safe_ptrace(PTRACE_GETHBPREGS, wtid, (void*)(uintptr_t)(bpIndex), &rv);
             debug_log("%d: Before: %d=%p\n", i, bpindex, rv);
 
-            i=safe_ptrace(PTRACE_SETHBPREGS, wtid, bpindex, &address);
+            i=safe_ptrace(PTRACE_SETHBPREGS, wtid, (void*)(uintptr_t)(bpIndex), &address);
             debug_log("i1=%d\n", i, hwbpreg);
 
-            i=safe_ptrace(PTRACE_GETHBPREGS, wtid, (void*)(uintptr_t)bpindex, &rv);
+            i=safe_ptrace(PTRACE_GETHBPREGS, wtid, (void*)(uintptr_t)(bpIndex), &rv);
             debug_log("%d: After: %d=%p\n", i, bpindex, rv);
 
 
@@ -1005,20 +1005,20 @@ int SetBreakpoint(HANDLE hProcess, int tid, int debugreg, void *address, int bpt
             result=i==0;
 
             hwbpreg=encode_ctrl_reg(0, ARM_BREAKPOINT_LEN_4, ARM_BREAKPOINT_EXECUTE, 2, 1);
-            if (safe_ptrace(PTRACE_SETHBPREGS, wtid, (void*)(uintptr_t)(bpindex+1), &hwbpreg)<0) //according to my guess, this should usually work, but just in case...
+            if (safe_ptrace(PTRACE_SETHBPREGS, wtid, (void*)(uintptr_t)(bpIndex+1), &hwbpreg)<0) //according to my guess, this should usually work, but just in case...
             {
               debug_log("f1\n");
               hwbpreg=encode_ctrl_reg(0, ARM_BREAKPOINT_LEN_2, ARM_BREAKPOINT_EXECUTE, 2, 1);
-              if (safe_ptrace(PTRACE_SETHBPREGS, wtid, (void*)(uintptr_t)(bpindex+1), &hwbpreg)<0)
+              if (safe_ptrace(PTRACE_SETHBPREGS, wtid, (void*)(uintptr_t)(bpIndex+1), &hwbpreg)<0)
               {
                 debug_log("f2\n");
                 hwbpreg=encode_ctrl_reg(0, ARM_BREAKPOINT_LEN_1, ARM_BREAKPOINT_EXECUTE, 2, 1);
-                if (safe_ptrace(PTRACE_SETHBPREGS, wtid, (void*)(uintptr_t)(bpindex+1), &hwbpreg)<0)
+                if (safe_ptrace(PTRACE_SETHBPREGS, wtid, (void*)(uintptr_t)(bpIndex+1), &hwbpreg)<0)
                 {
                   debug_log("f3\n");
                   //last try, 8 ?
                   hwbpreg=encode_ctrl_reg(0, ARM_BREAKPOINT_LEN_8, ARM_BREAKPOINT_EXECUTE, 2, 1);
-                  if (safe_ptrace(PTRACE_SETHBPREGS, wtid, (void*)(uintptr_t)(bpindex+1), &hwbpreg)<0)
+                  if (safe_ptrace(PTRACE_SETHBPREGS, wtid, (void*)(uintptr_t)(bpIndex+1), &hwbpreg)<0)
                   {
                     debug_log("Failure to set breakpoint\n");
                     result=FALSE;
@@ -1028,11 +1028,11 @@ int SetBreakpoint(HANDLE hProcess, int tid, int debugreg, void *address, int bpt
               }
             }
 
-            debug_log("bpindex=%d (void*)(uintptr_t)(bpindex+1)=%d\n", bpindex, (void*)(uintptr_t)(bpindex+1));
+            debug_log("bpindex=%d bpindex+1=%d\n", bpindex, bpindex+1);
 
             debug_log("hwbpreg=%x\n", hwbpreg);
 
-            i=safe_ptrace(PTRACE_GETHBPREGS, wtid, (void*)(uintptr_t)(bpindex+1), &hwbpreg);
+            i=safe_ptrace(PTRACE_GETHBPREGS, wtid, (void*)(uintptr_t)(bpIndex+1), &hwbpreg);
             debug_log("after=%x\n", hwbpreg);
 
           }
@@ -1045,7 +1045,7 @@ int SetBreakpoint(HANDLE hProcess, int tid, int debugreg, void *address, int bpt
 
             debug_log("watchpoint\n");
 
-            i=safe_ptrace(PTRACE_SETHBPREGS, wtid, (void*)(uintptr_t)(-bpindex), &address);
+            i=safe_ptrace(PTRACE_SETHBPREGS, wtid, (void*)(uintptr_t)(-bpIndex), &address);
             debug_log("i1=%d\n", i, hwbpreg);
 
             btype=0;
@@ -1059,9 +1059,9 @@ int SetBreakpoint(HANDLE hProcess, int tid, int debugreg, void *address, int bpt
               btype=ARM_BREAKPOINT_STORE | ARM_BREAKPOINT_LOAD;
 
             hwbpreg=encode_ctrl_reg(0, ARM_BREAKPOINT_LEN_4, btype, 0, 1);
-            i=safe_ptrace(PTRACE_SETHBPREGS, wtid, -((void*)(uintptr_t)(bpindex+1)), &hwbpreg);
+            i=safe_ptrace(PTRACE_SETHBPREGS, wtid, (void*)(uintptr_t)(-(bpIndex+1)), &hwbpreg);
 
-            debug_log("(void*)(uintptr_t)(-bpindex)=%d -((void*)(uintptr_t)(bpindex+1))=%d\n", (void*)(uintptr_t)(-bpindex), -((void*)(uintptr_t)(bpindex+1)));
+            debug_log("-bpindex=%d -(bpindex+1)=%d\n", -bpindex, -(bpindex+1));
           //  debug_log("i=%d  (hwbpreg=%x)\n", i, hwbpreg);
             result=i==0;
 
@@ -1079,7 +1079,7 @@ int SetBreakpoint(HANDLE hProcess, int tid, int debugreg, void *address, int bpt
         //PTRACE_SETREGS
         int r,r2;
 
-        uintptr_t newdr7=safe_ptrace(PTRACE_PEEKUSER, wtid, (void *)(offsetof(struct user, u_debugreg[7])), 0);
+        uintptr_t newdr7=safe_ptrace(PTRACE_PEEKUSER, wtid, (void*)(uintptr_t)((void *))(offsetof(struct user, u_debugreg[7])), 0);
 
 
         newdr7=newdr7 | (1<<debugreg*2);
@@ -1101,8 +1101,8 @@ int SetBreakpoint(HANDLE hProcess, int tid, int debugreg, void *address, int bpt
           newdr7=newdr7 | (3 << (18+(debugreg*4)));
 
 
-        r=safe_ptrace(PTRACE_POKEUSER, wtid, (void*)(offsetof(struct user, u_debugreg[debugreg])), address);
-        r2=safe_ptrace(PTRACE_POKEUSER, wtid, (void*)(offsetof(struct user, u_debugreg[7])), (void*)newdr7);
+        r=safe_ptrace(PTRACE_POKEUSER, wtid, (void*)(uintptr_t)((void*))(offsetof(struct user, u_debugreg[debugreg])), address);
+        r2=safe_ptrace(PTRACE_POKEUSER, wtid, (void*)(uintptr_t)((void*))(offsetof(struct user, u_debugreg[7])), (void*)newdr7);
 
         result=(r==0) && (r2==0);
         if (!result)
@@ -1133,7 +1133,7 @@ int SetBreakpoint(HANDLE hProcess, int tid, int debugreg, void *address, int bpt
           else
           {
             td->isPaused=0;
-            r=safe_ptrace(PTRACE_CONT, wtid, 0,0);
+            r=safe_ptrace(PTRACE_CONT, wtid, (void*)(uintptr_t)(0), 0);
             debug_log("PTRACE_CONT=%d\n", r);
           }
         }
@@ -1286,13 +1286,13 @@ int RemoveBreakpoint(HANDLE hProcess, int tid, int debugreg,int wasWatchpoint)
 
         if (wasWatchpoint)
         {
-          i=safe_ptrace(PTRACE_SETHBPREGS, wtid, (void*)(uintptr_t)(-bpindex), &bpreg);
-          i2=safe_ptrace(PTRACE_SETHBPREGS, wtid, -((void*)(uintptr_t)(bpindex+1)), &bpreg);
+          i=safe_ptrace(PTRACE_SETHBPREGS, wtid, (void*)(uintptr_t)(-bpIndex), &bpreg);
+          i2=safe_ptrace(PTRACE_SETHBPREGS, wtid, (void*)(uintptr_t)(-(bpIndex+1)), &bpreg);
         }
         else
         {
-          i=safe_ptrace(PTRACE_SETHBPREGS, wtid, bpIndex, &bpreg);
-          i2=safe_ptrace(PTRACE_SETHBPREGS, wtid, (void*)(uintptr_t)(bpindex+1), &bpreg);
+          i=safe_ptrace(PTRACE_SETHBPREGS, wtid, (void*)(uintptr_t)(bpIndex), &bpreg);
+          i2=safe_ptrace(PTRACE_SETHBPREGS, wtid, (void*)(uintptr_t)(bpIndex+1), &bpreg);
         }
 
 
@@ -1303,7 +1303,7 @@ int RemoveBreakpoint(HANDLE hProcess, int tid, int debugreg,int wasWatchpoint)
 
 
 
-        i3=safe_ptrace(PTRACE_SETHBPREGS, wtid, 1, &a);
+        i3=safe_ptrace(PTRACE_SETHBPREGS, wtid, (void*)(uintptr_t)(1), &a);
 
         result=(i==0) && (i2==0) && (i3==0);
 #endif
@@ -1325,7 +1325,7 @@ int RemoveBreakpoint(HANDLE hProcess, int tid, int debugreg,int wasWatchpoint)
         else
           bplist=NT_ARM_HW_BREAK;
 
-        i=safe_ptrace(PTRACE_GETREGSET, wtid, (void*)(size_t)bplist, &iov);
+        i=safe_ptrace(PTRACE_GETREGSET, wtid, (void*)(uintptr_t)((void*))(size_t)bplist, &iov);
         if (i!=0)
           debug_log("PTRACE_GETREGSET failed\n");
 
@@ -1356,7 +1356,7 @@ int RemoveBreakpoint(HANDLE hProcess, int tid, int debugreg,int wasWatchpoint)
 
           iov.iov_len=8+16*(hwd.dbg_info & 0xf);
 
-          i=safe_ptrace(PTRACE_SETREGSET, wtid, (void*)(size_t)bplist, (void*)&iov);
+          i=safe_ptrace(PTRACE_SETREGSET, wtid, (void*)(uintptr_t)((void*))(size_t)bplist, (void*)&iov);
           if (i!=0)
             debug_log("PTRACE_SETREGSET failed :%s\n", strerror(errno));
         }
@@ -1376,16 +1376,16 @@ int RemoveBreakpoint(HANDLE hProcess, int tid, int debugreg,int wasWatchpoint)
         uintptr_t dr7=0;
         debug_log("x86\n");
 
-        dr7=safe_ptrace(PTRACE_PEEKUSER, wtid, (void*)(offsetof(struct user, u_debugreg[7])), 0);
+        dr7=safe_ptrace(PTRACE_PEEKUSER, wtid, (void*)(uintptr_t)((void*))(offsetof(struct user, u_debugreg[7])), 0);
 
         dr7&=~(3 << (debugreg*2)); //disable G# and L#
         dr7&=~(15 << (16+debugreg*4)); //set len and type for this debugreg to 0
 
 
-        r=safe_ptrace(PTRACE_POKEUSER, wtid, (void*)(offsetof(struct user, u_debugreg[debugreg])), 0);
+        r=safe_ptrace(PTRACE_POKEUSER, wtid, (void*)(uintptr_t)((void*))(offsetof(struct user, u_debugreg[debugreg])), 0);
 
 
-        r=safe_ptrace(PTRACE_POKEUSER, wtid, (void*)(offsetof(struct user, u_debugreg[7])), (void*)dr7);
+        r=safe_ptrace(PTRACE_POKEUSER, wtid, (void*)(uintptr_t)((void*))(offsetof(struct user, u_debugreg[7])), (void*)dr7);
         if (r==0)
           result=TRUE;
         else
@@ -1409,7 +1409,7 @@ int RemoveBreakpoint(HANDLE hProcess, int tid, int debugreg,int wasWatchpoint)
           }
           else
           {
-            r=safe_ptrace(PTRACE_CONT, wtid, 0,0);
+            r=safe_ptrace(PTRACE_CONT, wtid, (void*)(uintptr_t)(0), 0);
             debug_log("PTRACE_CONT=%d\n", r);
 
             td->isPaused=0;
@@ -1493,7 +1493,7 @@ BOOL GetThreadContext(HANDLE hProcess, int tid, PCONTEXT Context)
       int pid=ptrace_attach_andwait(tid);
       int k=getContext(pid, Context);
 
-      safe_ptrace(PTRACE_DETACH, pid,0,0);
+      safe_ptrace(PTRACE_DETACH, pid, (void*)(uintptr_t)(0), 0);
       if (k==0)
         return TRUE;
       else
@@ -1531,7 +1531,7 @@ BOOL GetThreadContext(HANDLE hProcess, int tid, PCONTEXT Context)
         k=getContext(tid, Context);
 
 
-        //k=safe_ptrace(PTRACE_GETREGS, tid, 0, &Context->regs);
+        //k=safe_ptrace(PTRACE_GETREGS, tid, (void*)(uintptr_t)(0), &Context->regs);
         debug_log("getRegisters() returned %d\n", k);
 
         if (k==0)
@@ -1556,7 +1556,7 @@ BOOL GetThreadContext(HANDLE hProcess, int tid, PCONTEXT Context)
           }
           else
           {
-            r=(r && (safe_ptrace(PTRACE_CONT, de.threadid, 0,0)==0));
+            r=(r && (safe_ptrace(PTRACE_CONT, de.threadid, (void*)(uintptr_t)(0), 0)==0));
 
 
             td->isPaused=0;
@@ -1672,7 +1672,7 @@ BOOL SetThreadContext(HANDLE hProcess, int tid, PCONTEXT Context)
           k=setContext(tid, Context);
 
 
-          //k=safe_ptrace(PTRACE_SETREGS, tid, 0, &Context->regs);
+          //k=safe_ptrace(PTRACE_SETREGS, tid, (void*)(uintptr_t)(0), &Context->regs);
           debug_log("setRegisters() returned %d\n", k);
 
           if (k==0)
@@ -1696,7 +1696,7 @@ BOOL SetThreadContext(HANDLE hProcess, int tid, PCONTEXT Context)
             }
             else
             {
-              r=(r && (safe_ptrace(PTRACE_CONT, de.threadid, 0,0)==0));
+              r=(r && (safe_ptrace(PTRACE_CONT, de.threadid, (void*)(uintptr_t)(0), 0)==0));
 
 
               td->isPaused=0;
@@ -1867,7 +1867,7 @@ int ResumeThread(HANDLE hProcess, int tid)
           if (t->suspendedDevent.debugevent==SIGSTOP)
           {
             debug_log("SIGSTOP: Continue thread without queing\n");
-            safe_ptrace(PTRACE_CONT, t->suspendedDevent.threadid, 0,0);
+            safe_ptrace(PTRACE_CONT, t->suspendedDevent.threadid, (void*)(uintptr_t)(0), 0);
             td->isPaused=0;
           }
           else
@@ -2005,7 +2005,7 @@ int GetStopSignalFromThread(int tid)
 {
   siginfo_t si;
 
-  if (safe_ptrace(PTRACE_GETSIGINFO, tid, NULL, &si)==0)
+  if (safe_ptrace(PTRACE_GETSIGINFO, tid, (void*)(uintptr_t)(NULL), &si)==0)
     return si.si_signo;
   else
     return -1;
@@ -2296,7 +2296,7 @@ int WaitForDebugEvent(HANDLE hProcess, PDebugEvent devent, int timeout)
 
 #if (defined(__arm__) || defined(__aarch64__))
           //return si_addr of siginfo
-          if (safe_ptrace(PTRACE_GETSIGINFO, p->debuggedThreadEvent.threadid, NULL, &si)==0)
+          if (safe_ptrace(PTRACE_GETSIGINFO, p->debuggedThreadEvent.threadid, (void*)(uintptr_t)(NULL), &si)==0)
           {
 
             p->debuggedThreadEvent.address=(uintptr_t)si.si_addr;
@@ -2311,19 +2311,19 @@ int WaitForDebugEvent(HANDLE hProcess, PDebugEvent devent, int timeout)
           uintptr_t DR0,DR1,DR2,DR3,DR7, IP, SP;
           regDR6 DR6;
 #if defined __i386__
-          IP=safe_ptrace(PTRACE_PEEKUSER, p->debuggedThreadEvent.threadid, offsetof(struct user, regs.eip), 0);
-          SP=safe_ptrace(PTRACE_PEEKUSER, p->debuggedThreadEvent.threadid, offsetof(struct user, regs.esp), 0);
+          IP=safe_ptrace(PTRACE_PEEKUSER, p->debuggedThreadEvent.threadid, (void*)(uintptr_t)(offsetof(struct user), regs.eip), 0);
+          SP=safe_ptrace(PTRACE_PEEKUSER, p->debuggedThreadEvent.threadid, (void*)(uintptr_t)(offsetof(struct user), regs.esp), 0);
 #else
-          IP=safe_ptrace(PTRACE_PEEKUSER, p->debuggedThreadEvent.threadid, (void*)offsetof(struct user, regs.rip), 0);
-          SP=safe_ptrace(PTRACE_PEEKUSER, p->debuggedThreadEvent.threadid, (void*)offsetof(struct user, regs.rsp), 0);
+          IP=safe_ptrace(PTRACE_PEEKUSER, p->debuggedThreadEvent.threadid, (void*)(uintptr_t)((void*))offsetof(struct user, regs.rip), 0);
+          SP=safe_ptrace(PTRACE_PEEKUSER, p->debuggedThreadEvent.threadid, (void*)(uintptr_t)((void*))offsetof(struct user, regs.rsp), 0);
 #endif
-          DR0=safe_ptrace(PTRACE_PEEKUSER, p->debuggedThreadEvent.threadid, (void*)offsetof(struct user, u_debugreg[0]), 0);
-          DR1=safe_ptrace(PTRACE_PEEKUSER, p->debuggedThreadEvent.threadid, (void*)offsetof(struct user, u_debugreg[1]), 0);
-          DR2=safe_ptrace(PTRACE_PEEKUSER, p->debuggedThreadEvent.threadid, (void*)offsetof(struct user, u_debugreg[2]), 0);
-          DR3=safe_ptrace(PTRACE_PEEKUSER, p->debuggedThreadEvent.threadid, (void*)offsetof(struct user, u_debugreg[3]), 0);
+          DR0=safe_ptrace(PTRACE_PEEKUSER, p->debuggedThreadEvent.threadid, (void*)(uintptr_t)((void*))offsetof(struct user, u_debugreg[0]), 0);
+          DR1=safe_ptrace(PTRACE_PEEKUSER, p->debuggedThreadEvent.threadid, (void*)(uintptr_t)((void*))offsetof(struct user, u_debugreg[1]), 0);
+          DR2=safe_ptrace(PTRACE_PEEKUSER, p->debuggedThreadEvent.threadid, (void*)(uintptr_t)((void*))offsetof(struct user, u_debugreg[2]), 0);
+          DR3=safe_ptrace(PTRACE_PEEKUSER, p->debuggedThreadEvent.threadid, (void*)(uintptr_t)((void*))offsetof(struct user, u_debugreg[3]), 0);
 
-          DR6.value=safe_ptrace(PTRACE_PEEKUSER, p->debuggedThreadEvent.threadid, (void*)offsetof(struct user, u_debugreg[6]), 0);
-          DR7=safe_ptrace(PTRACE_PEEKUSER, p->debuggedThreadEvent.threadid, (void*)offsetof(struct user, u_debugreg[7]), 0);
+          DR6.value=safe_ptrace(PTRACE_PEEKUSER, p->debuggedThreadEvent.threadid, (void*)(uintptr_t)((void*))offsetof(struct user, u_debugreg[6]), 0);
+          DR7=safe_ptrace(PTRACE_PEEKUSER, p->debuggedThreadEvent.threadid, (void*)(uintptr_t)((void*))offsetof(struct user, u_debugreg[7]), 0);
 
           debug_log("sizeof(dr0)=%d\n", sizeof(DR0));
           debug_log("sizeof(long)=%d\n", sizeof(long));
@@ -2427,7 +2427,7 @@ int ContinueFromDebugEvent(HANDLE hProcess, int tid, int ignoresignal)
 
 
 
-    if (safe_ptrace(PTRACE_GETSIGINFO, tid, NULL, &si)==0)
+    if (safe_ptrace(PTRACE_GETSIGINFO, tid, (void*)(uintptr_t)(NULL), &si)==0)
     {
       int signal=ignoresignal?0:si.si_signo;
 
@@ -2442,7 +2442,7 @@ int ContinueFromDebugEvent(HANDLE hProcess, int tid, int ignoresignal)
       }
 
 #if defined __i386__ || defined __x86_64__
-      safe_ptrace(PTRACE_POKEUSER, tid, (void*)offsetof(struct user, u_debugreg[6]), 0);
+      safe_ptrace(PTRACE_POKEUSER, tid, (void*)(uintptr_t)((void*))offsetof(struct user, u_debugreg[6]), 0);
 #endif
 
 
@@ -2473,7 +2473,7 @@ int ContinueFromDebugEvent(HANDLE hProcess, int tid, int ignoresignal)
         iov.iov_base=&watchhwd;
         iov.iov_len=sizeof(watchhwd);
 
-        result=safe_ptrace(PTRACE_GETREGSET, tid, (void*)NT_ARM_HW_WATCH, &iov);
+        result=safe_ptrace(PTRACE_GETREGSET, tid, (void*)(uintptr_t)((void*))NT_ARM_HW_WATCH, &iov);
         if (result==0)
         {
 
@@ -2492,7 +2492,7 @@ int ContinueFromDebugEvent(HANDLE hProcess, int tid, int ignoresignal)
           debug_log("Disabling watches for this thread:");
           iov.iov_base=&temphwd;
           iov.iov_len=8+16*maxWatchCount;
-          result=safe_ptrace(PTRACE_SETREGSET, tid, (void*)NT_ARM_HW_WATCH, &iov);
+          result=safe_ptrace(PTRACE_SETREGSET, tid, (void*)(uintptr_t)((void*))NT_ARM_HW_WATCH, &iov);
 
           if (result==0)
             debug_log("Success\n");
@@ -2503,7 +2503,7 @@ int ContinueFromDebugEvent(HANDLE hProcess, int tid, int ignoresignal)
 
         iov.iov_base=&breakhwd;
         iov.iov_len=sizeof(breakhwd);
-        i=safe_ptrace(PTRACE_GETREGSET, tid, (void*)NT_ARM_HW_BREAK, &iov);
+        i=safe_ptrace(PTRACE_GETREGSET, tid, (void*)(uintptr_t)((void*))NT_ARM_HW_BREAK, &iov);
         if (i==0)
         {
           maxBreakCount=breakhwd.dbg_info & 0xf;
@@ -2518,7 +2518,7 @@ int ContinueFromDebugEvent(HANDLE hProcess, int tid, int ignoresignal)
 
           debug_log("Disabling breaks for this thread:");
           iov.iov_len=8+16*maxBreakCount;
-          result=safe_ptrace(PTRACE_SETREGSET, tid, (void*)NT_ARM_HW_BREAK, &iov);
+          result=safe_ptrace(PTRACE_SETREGSET, tid, (void*)(uintptr_t)((void*))NT_ARM_HW_BREAK, &iov);
 
           if (result==0)
             debug_log("Success\n");
@@ -2530,7 +2530,7 @@ int ContinueFromDebugEvent(HANDLE hProcess, int tid, int ignoresignal)
 
 #endif
 
-        result=safe_ptrace(PTRACE_SINGLESTEP, tid, 0,0);
+        result=safe_ptrace(PTRACE_SINGLESTEP, tid, (void*)(uintptr_t)(0), 0);
 
 #ifdef __aarch64__
 
@@ -2542,13 +2542,13 @@ int ContinueFromDebugEvent(HANDLE hProcess, int tid, int ignoresignal)
         if (result!=0)
         {
           debug_log("PTRACE_SINGLESTEP failed (%d). Shit happens\n", errno);
-          result=safe_ptrace(PTRACE_CONT, tid, 0,(void*)(size_t)signal);
+          result=safe_ptrace(PTRACE_CONT, tid, (void*)(uintptr_t)(0), (void*)(size_t)signal);
         }
 
       }
       else
       {
-        result=safe_ptrace(PTRACE_CONT, tid, 0,(void*)(size_t)signal);
+        result=safe_ptrace(PTRACE_CONT, tid, (void*)(uintptr_t)(0), (void*)(size_t)signal);
       }
 
 
@@ -2613,7 +2613,7 @@ int StopDebug(HANDLE hProcess)
               else
               {
                 debug_log("Got %d instead (status=%x)\n",tid, status);
-                safe_ptrace(PTRACE_CONT, tid, 0, 0);
+                safe_ptrace(PTRACE_CONT, tid, (void*)(uintptr_t)(0), 0);
                 continue;
               }
             }
@@ -2621,7 +2621,7 @@ int StopDebug(HANDLE hProcess)
             {
               debug_log("It stopped but with a wrong signal (%d)\n", WSTOPSIG(status));
 
-              safe_ptrace(PTRACE_CONT, tid, 0, (void*)(size_t)WSTOPSIG(status));
+              safe_ptrace(PTRACE_CONT, tid, (void*)(uintptr_t)(0), (void*)(size_t)WSTOPSIG(status));
             }
           }
           else
@@ -2634,7 +2634,7 @@ int StopDebug(HANDLE hProcess)
         if (tid)
         {
           debug_log("Detaching %d\n", tid);
-          safe_ptrace(PTRACE_DETACH, tid,0,0);
+          safe_ptrace(PTRACE_DETACH, tid, (void*)(uintptr_t)(0), 0);
         }
         else
         {
@@ -2723,7 +2723,7 @@ int WriteProcessMemoryDebug(HANDLE hProcess, PProcessData p, void *lpAddress, vo
       while (offset<max)
       {
         debug_log("offset=%d max=%d\n", offset, max);
-        safe_ptrace(PTRACE_POKEDATA, event.threadid, (void*)((uintptr_t)lpAddress+offset), (void *)*address);
+        safe_ptrace(PTRACE_POKEDATA, event.threadid, (void*)(uintptr_t)((void*))((uintptr_t)lpAddress+offset), (void *)*address);
 
         address++;
         offset+=sizeof(long int);
@@ -2735,11 +2735,11 @@ int WriteProcessMemoryDebug(HANDLE hProcess, PProcessData p, void *lpAddress, vo
         debug_log("WPMD: Still some bytes left: %d\n", size-offset);
         //still a few bytes left
         uintptr_t oldvalue=0;
-        oldvalue=safe_ptrace(PTRACE_PEEKDATA, event.threadid,  (void *)(uintptr_t)lpAddress+offset, (void*)0);
+        oldvalue=safe_ptrace(PTRACE_PEEKDATA, event.threadid, (void*)(uintptr_t)((void *))(uintptr_t)lpAddress+offset, (void*)0);
         #ifdef __x86_64__
           //Even with 64 bits, peek_data can read only 4 bytes.
           debug_log("64-bit: oldvalue=%lx\n", oldvalue);
-          //oldvalue += safe_ptrace(PTRACE_PEEKDATA, p->pid,  (void *)(uintptr_t)lpAddress+offset+4, (void*)0)*0x100000000;
+          //oldvalue += safe_ptrace(PTRACE_PEEKDATA, p->pid, (void*)(uintptr_t)((void *))(uintptr_t)lpAddress+offset+4, (void*)0)*0x100000000;
 
           //debug_log("64-bit: oldvalue with full read=%lx\n", oldvalue);
         #endif
@@ -2755,7 +2755,7 @@ int WriteProcessMemoryDebug(HANDLE hProcess, PProcessData p, void *lpAddress, vo
         debug_log("newvalue=%lx\n", oldvalue);
 
 
-        i=safe_ptrace(PTRACE_POKEDATA, event.threadid, (void*)((uintptr_t)lpAddress+offset), (void *)oldvalue);
+        i=safe_ptrace(PTRACE_POKEDATA, event.threadid, (void*)(uintptr_t)((void*))((uintptr_t)lpAddress+offset), (void *)oldvalue);
 
         debug_log("ptrace poke returned %d\n", i);
         if (i>=0)
@@ -2780,7 +2780,7 @@ int WriteProcessMemoryDebug(HANDLE hProcess, PProcessData p, void *lpAddress, vo
         if (td)
           td->isPaused=0;
 
-        safe_ptrace(PTRACE_CONT, event.threadid, 0,0);
+        safe_ptrace(PTRACE_CONT, event.threadid, (void*)(uintptr_t)(0), 0);
       }
       else
       {
@@ -2881,7 +2881,7 @@ int WriteProcessMemory(HANDLE hProcess, void *lpAddress, void *buffer, int size)
       if (MEMORY_SEARCH_OPTION==2)
         write_v=process_vm_writev;
       else
-        write_v=process_vm_writev2;
+        write_v=(PROCESS_VM_WRITEV)process_vm_writev2;
 
 
       written=write_v(p->pid,&local,1,&remote,1,0);
@@ -2896,7 +2896,7 @@ int WriteProcessMemory(HANDLE hProcess, void *lpAddress, void *buffer, int size)
       if (attachedpid>=0)
       {
         debug_log("WPM: Detaching\n");
-        safe_ptrace(PTRACE_DETACH, attachedpid,0,0);
+        safe_ptrace(PTRACE_DETACH, attachedpid, (void*)(uintptr_t)(0), 0);
       }
 
       pthread_mutex_unlock(&memorymutex);
@@ -2976,7 +2976,7 @@ int WriteProcessMemory(HANDLE hProcess, void *lpAddress, void *buffer, int size)
           while (offset<max)
           {
             debug_log("offset=%d max=%d\n", offset, max);
-            safe_ptrace(PTRACE_POKEDATA, pid, (void*)((uintptr_t)lpAddress+offset), (void *)*address);
+            safe_ptrace(PTRACE_POKEDATA, pid, (void*)(uintptr_t)((void*))((uintptr_t)lpAddress+offset), (void *)*address);
 
             address++;
             offset+=sizeof(long int);
@@ -2991,7 +2991,7 @@ int WriteProcessMemory(HANDLE hProcess, void *lpAddress, void *buffer, int size)
             debug_log("WPM: Still some bytes left: %d\n", size-offset);
             //still a few bytes left
             uintptr_t oldvalue=0;
-            oldvalue=safe_ptrace(PTRACE_PEEKDATA, pid,  (void *)(uintptr_t)lpAddress+offset, (void*)0);
+            oldvalue=safe_ptrace(PTRACE_PEEKDATA, pid, (void*)(uintptr_t)((void *))(uintptr_t)lpAddress+offset, (void*)0);
 
             unsigned char *oldbuf=(unsigned char *)&oldvalue;
             unsigned char *newmem=(unsigned char *)address;
@@ -3005,7 +3005,7 @@ int WriteProcessMemory(HANDLE hProcess, void *lpAddress, void *buffer, int size)
             debug_log("newvalue=%lx\n", oldvalue);
 
 
-            i=safe_ptrace(PTRACE_POKEDATA, pid, (void*)((uintptr_t)lpAddress+offset), (void *)oldvalue);
+            i=safe_ptrace(PTRACE_POKEDATA, pid, (void*)(uintptr_t)((void*))((uintptr_t)lpAddress+offset), (void *)oldvalue);
 
             debug_log("ptrace poke returned %d\n", i);
             if (i>=0)
@@ -3014,7 +3014,7 @@ int WriteProcessMemory(HANDLE hProcess, void *lpAddress, void *buffer, int size)
         }
 
         if (ATTACH_TO_WRITE_MEMORY)
-          safe_ptrace(PTRACE_DETACH, pid,0,0);
+          safe_ptrace(PTRACE_DETACH, pid, (void*)(uintptr_t)(0), 0);
       }
       else
         debug_log("PTRACE ATTACH FAILED\n");
@@ -3157,7 +3157,7 @@ int ReadProcessMemoryDebug(HANDLE hProcess, PProcessData p, void *lpAddress, voi
       while(offset<max)
       {
         errno = 0;
-        value =  safe_ptrace(PTRACE_PEEKDATA, p->pid, (void*)((uintptr_t)lpAddress+offset), (void *)0);
+        value =  safe_ptrace(PTRACE_PEEKDATA, p->pid, (void*)(uintptr_t)((void*))((uintptr_t)lpAddress+offset), (void *)0);
 
         if(errno == 0)
         {
@@ -3179,7 +3179,7 @@ int ReadProcessMemoryDebug(HANDLE hProcess, PProcessData p, void *lpAddress, voi
       if(offset < size && is_readable)
       {
         errno = 0;
-        value =  safe_ptrace(PTRACE_PEEKDATA, p->pid, (void*)((uintptr_t)lpAddress+offset), (void *)0);
+        value =  safe_ptrace(PTRACE_PEEKDATA, p->pid, (void*)(uintptr_t)((void*))((uintptr_t)lpAddress+offset), (void *)0);
         
         if(errno == 0)
         {
@@ -3203,7 +3203,7 @@ int ReadProcessMemoryDebug(HANDLE hProcess, PProcessData p, void *lpAddress, voi
 
       //  debug_log("Continue from sigstop\n");
 
-        safe_ptrace(PTRACE_CONT, event.threadid, 0,0);
+        safe_ptrace(PTRACE_CONT, event.threadid, (void*)(uintptr_t)(0), 0);
 
         if (td)
           td->isPaused=0;
@@ -3316,7 +3316,7 @@ int ReadProcessMemory(HANDLE hProcess, void *lpAddress, void *buffer, int size)
       if (MEMORY_SEARCH_OPTION == 2)
         readv=process_vm_readv;
       else
-        readv=process_vm_readv2;
+        readv=(PROCESS_VM_READV)process_vm_readv2;
 
       if (readv)
       {
@@ -3352,7 +3352,7 @@ int ReadProcessMemory(HANDLE hProcess, void *lpAddress, void *buffer, int size)
         }
 
         if (ATTACH_TO_ACCESS_MEMORY)
-          safe_ptrace(PTRACE_DETACH, pid,0,0);
+          safe_ptrace(PTRACE_DETACH, pid, (void*)(uintptr_t)(0), 0);
 
         return bread;
       }
@@ -3425,7 +3425,7 @@ int ReadProcessMemory(HANDLE hProcess, void *lpAddress, void *buffer, int size)
             while(offset<max)
             {
               errno = 0;
-              value =  safe_ptrace(PTRACE_PEEKDATA, pid, (void*)((uintptr_t)lpAddress+offset), (void *)0);
+              value =  safe_ptrace(PTRACE_PEEKDATA, pid, (void*)(uintptr_t)((void*))((uintptr_t)lpAddress+offset), (void *)0);
 
               if(errno == 0)
               {
@@ -3447,7 +3447,7 @@ int ReadProcessMemory(HANDLE hProcess, void *lpAddress, void *buffer, int size)
             if(offset < size && is_readable)
             {
               errno = 0;
-              value =  safe_ptrace(PTRACE_PEEKDATA, pid, (void*)((uintptr_t)lpAddress+offset), (void *)0);
+              value =  safe_ptrace(PTRACE_PEEKDATA, pid, (void*)(uintptr_t)((void*))((uintptr_t)lpAddress+offset), (void *)0);
               
               if(errno == 0)
               {
@@ -3464,7 +3464,7 @@ int ReadProcessMemory(HANDLE hProcess, void *lpAddress, void *buffer, int size)
 
           if (ATTACH_TO_ACCESS_MEMORY)
           {
-            int r=safe_ptrace(PTRACE_DETACH, pid,0,0);
+            int r=safe_ptrace(PTRACE_DETACH, pid, (void*)(uintptr_t)(0), 0);
             //debug_log("PTRACE_DETACH returned %d\n", r);
 
           }
