@@ -10,7 +10,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include "porthelp.h"
-
+void debug_log(const char *format, ...);
 typedef struct
 {
   handleType type;
