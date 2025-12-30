@@ -2094,7 +2094,13 @@ int main(int argc, char *argv[])
     memset(&addr_client, 0, sizeof(addr_client));
 
     #ifndef SHARED_LIBRARY
-    sigaction(SIGPIPE, &(struct sigaction){SIG_IGN}, NULL);
+{
+    struct sigaction sa;
+    memset(&sa, 0, sizeof(sa));
+    sa.sa_handler = SIG_IGN;
+    sigaction(SIGPIPE, &sa, NULL);
+}
+
 
 
     if (TEST_MODE == 1)
