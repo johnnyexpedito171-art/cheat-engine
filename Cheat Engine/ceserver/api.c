@@ -219,7 +219,7 @@ char *PTraceToString(int request)
 
 
 //Implementation for consistency with Android Studio.
-uintptr_t safe_ptrace(int request, pid_t pid, (void*)(uintptr_t)(void * addr), void * data)
+uintptr_t safe_ptrace(int request, pid_t pid, void *addr, void *data)
 {
 #ifdef TRACEPTRACE
  // debug_log("ATTACH_TO_ACCESS_MEMORY=%d\n", ATTACH_TO_ACCESS_MEMORY);
