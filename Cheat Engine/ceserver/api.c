@@ -988,16 +988,16 @@ int SetBreakpoint(HANDLE hProcess, int tid, int debugreg, void *address, int bpt
             //execute
             void *rv=NULL;
            // safe_ptrace(PTRACE_SETHBPREGS, wtid, bpindex, &rv);
-           // safe_ptrace(PTRACE_SETHBPREGS, wtid, bpindex+1, &rv);
+           // safe_ptrace(PTRACE_SETHBPREGS, wtid, (void*)(uintptr_t)(bpindex+1), &rv);
 
 
-            i=safe_ptrace(PTRACE_GETHBPREGS, wtid, bpindex, &rv);
+            i=safe_ptrace(PTRACE_GETHBPREGS, wtid, (void*)(uintptr_t)bpindex, &rv);
             debug_log("%d: Before: %d=%p\n", i, bpindex, rv);
 
             i=safe_ptrace(PTRACE_SETHBPREGS, wtid, bpindex, &address);
             debug_log("i1=%d\n", i, hwbpreg);
 
-            i=safe_ptrace(PTRACE_GETHBPREGS, wtid, bpindex, &rv);
+            i=safe_ptrace(PTRACE_GETHBPREGS, wtid, (void*)(uintptr_t)bpindex, &rv);
             debug_log("%d: After: %d=%p\n", i, bpindex, rv);
 
 
@@ -1005,20 +1005,20 @@ int SetBreakpoint(HANDLE hProcess, int tid, int debugreg, void *address, int bpt
             result=i==0;
 
             hwbpreg=encode_ctrl_reg(0, ARM_BREAKPOINT_LEN_4, ARM_BREAKPOINT_EXECUTE, 2, 1);
-            if (safe_ptrace(PTRACE_SETHBPREGS, wtid, bpindex+1, &hwbpreg)<0) //according to my guess, this should usually work, but just in case...
+            if (safe_ptrace(PTRACE_SETHBPREGS, wtid, (void*)(uintptr_t)(bpindex+1), &hwbpreg)<0) //according to my guess, this should usually work, but just in case...
             {
               debug_log("f1\n");
               hwbpreg=encode_ctrl_reg(0, ARM_BREAKPOINT_LEN_2, ARM_BREAKPOINT_EXECUTE, 2, 1);
-              if (safe_ptrace(PTRACE_SETHBPREGS, wtid, bpindex+1, &hwbpreg)<0)
+              if (safe_ptrace(PTRACE_SETHBPREGS, wtid, (void*)(uintptr_t)(bpindex+1), &hwbpreg)<0)
               {
                 debug_log("f2\n");
                 hwbpreg=encode_ctrl_reg(0, ARM_BREAKPOINT_LEN_1, ARM_BREAKPOINT_EXECUTE, 2, 1);
-                if (safe_ptrace(PTRACE_SETHBPREGS, wtid, bpindex+1, &hwbpreg)<0)
+                if (safe_ptrace(PTRACE_SETHBPREGS, wtid, (void*)(uintptr_t)(bpindex+1), &hwbpreg)<0)
                 {
                   debug_log("f3\n");
                   //last try, 8 ?
                   hwbpreg=encode_ctrl_reg(0, ARM_BREAKPOINT_LEN_8, ARM_BREAKPOINT_EXECUTE, 2, 1);
-                  if (safe_ptrace(PTRACE_SETHBPREGS, wtid, bpindex+1, &hwbpreg)<0)
+                  if (safe_ptrace(PTRACE_SETHBPREGS, wtid, (void*)(uintptr_t)(bpindex+1), &hwbpreg)<0)
                   {
                     debug_log("Failure to set breakpoint\n");
                     result=FALSE;
@@ -1028,11 +1028,11 @@ int SetBreakpoint(HANDLE hProcess, int tid, int debugreg, void *address, int bpt
               }
             }
 
-            debug_log("bpindex=%d bpindex+1=%d\n", bpindex, bpindex+1);
+            debug_log("bpindex=%d (void*)(uintptr_t)(bpindex+1)=%d\n", bpindex, (void*)(uintptr_t)(bpindex+1));
 
             debug_log("hwbpreg=%x\n", hwbpreg);
 
-            i=safe_ptrace(PTRACE_GETHBPREGS, wtid, bpindex+1, &hwbpreg);
+            i=safe_ptrace(PTRACE_GETHBPREGS, wtid, (void*)(uintptr_t)(bpindex+1), &hwbpreg);
             debug_log("after=%x\n", hwbpreg);
 
           }
@@ -1045,7 +1045,7 @@ int SetBreakpoint(HANDLE hProcess, int tid, int debugreg, void *address, int bpt
 
             debug_log("watchpoint\n");
 
-            i=safe_ptrace(PTRACE_SETHBPREGS, wtid, -bpindex, &address);
+            i=safe_ptrace(PTRACE_SETHBPREGS, wtid, (void*)(uintptr_t)(-bpindex), &address);
             debug_log("i1=%d\n", i, hwbpreg);
 
             btype=0;
@@ -1059,9 +1059,9 @@ int SetBreakpoint(HANDLE hProcess, int tid, int debugreg, void *address, int bpt
               btype=ARM_BREAKPOINT_STORE | ARM_BREAKPOINT_LOAD;
 
             hwbpreg=encode_ctrl_reg(0, ARM_BREAKPOINT_LEN_4, btype, 0, 1);
-            i=safe_ptrace(PTRACE_SETHBPREGS, wtid, -(bpindex+1), &hwbpreg);
+            i=safe_ptrace(PTRACE_SETHBPREGS, wtid, -((void*)(uintptr_t)(bpindex+1)), &hwbpreg);
 
-            debug_log("-bpindex=%d -(bpindex+1)=%d\n", -bpindex, -(bpindex+1));
+            debug_log("(void*)(uintptr_t)(-bpindex)=%d -((void*)(uintptr_t)(bpindex+1))=%d\n", (void*)(uintptr_t)(-bpindex), -((void*)(uintptr_t)(bpindex+1)));
           //  debug_log("i=%d  (hwbpreg=%x)\n", i, hwbpreg);
             result=i==0;
 
@@ -1286,13 +1286,13 @@ int RemoveBreakpoint(HANDLE hProcess, int tid, int debugreg,int wasWatchpoint)
 
         if (wasWatchpoint)
         {
-          i=safe_ptrace(PTRACE_SETHBPREGS, wtid, -bpIndex, &bpreg);
-          i2=safe_ptrace(PTRACE_SETHBPREGS, wtid, -(bpIndex+1), &bpreg);
+          i=safe_ptrace(PTRACE_SETHBPREGS, wtid, (void*)(uintptr_t)(-bpindex), &bpreg);
+          i2=safe_ptrace(PTRACE_SETHBPREGS, wtid, -((void*)(uintptr_t)(bpindex+1)), &bpreg);
         }
         else
         {
           i=safe_ptrace(PTRACE_SETHBPREGS, wtid, bpIndex, &bpreg);
-          i2=safe_ptrace(PTRACE_SETHBPREGS, wtid, bpIndex+1, &bpreg);
+          i2=safe_ptrace(PTRACE_SETHBPREGS, wtid, (void*)(uintptr_t)(bpindex+1), &bpreg);
         }
 
 
