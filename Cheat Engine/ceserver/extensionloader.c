@@ -1134,7 +1134,7 @@ uint64_t allocWithoutExtension(HANDLE hProcess, void *addr, size_t length, int p
     newstate.ARM_sp-=8;
     newstate.ARM_lr=returnaddress;
     newstate.ARM_pc=p->mmap;
-    newstate.ARM_r0=addr;
+    newstate.ARM_r0 = (long)(uintptr_t)addr;
     newstate.ARM_r1=length;
     newstate.ARM_r2=prot;
     newstate.ARM_r3=MAP_PRIVATE | MAP_ANONYMOUS;
