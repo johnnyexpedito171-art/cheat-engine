@@ -1,0 +1,44 @@
+name: Build CEServer Android Release
+
+on:
+  push:
+    branches:
+      - main
+      - master
+  workflow_dispatch:
+
+jobs:
+  build-android:
+    name: Build Android CEServer
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Setup Android NDK
+        uses: android-tools/setup-ndk@v2
+        with:
+          ndk-version: 'r25c'   # pode ser alterado conforme necessidade
+
+      - name: Prepare build directory
+        run: |
+          ls -R .
+
+      - name: Run ndk-build for CEServer Android
+        working-directory: ./Cheat Engine/ceserver/ndk-build/EXECUTABLE
+        run: |
+          echo "NDK path: $ANDROID_NDK_HOME"
+          $ANDROID_NDK_HOME/ndk-build NDK_APPLICATION_MK=Application.mk APP_ABI=all \
+            V=1
+
+      - name: Collect build outputs
+        run: |
+          mkdir -p ./android-artifacts
+          cp ./Cheat Engine/ceserver/ndk-build/EXECUTABLE/libs/* ./android-artifacts/
+
+      - name: Upload CEServer Android artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: ceserver-android-release
+          path: ./android-artifacts/
