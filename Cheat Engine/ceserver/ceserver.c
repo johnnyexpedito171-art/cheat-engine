@@ -35,7 +35,6 @@
 #include "ceserver.h"
 #include "porthelp.h"
 #include "api.h"
-#include "ceservertest.h"
 #include "symbols.h"
 #include "extensionfunctions.h"
 #include "native-api.h"
@@ -2101,7 +2100,6 @@ int main(int argc, char *argv[])
     if (TEST_MODE == 1)
     {
       debug_log("TESTMODE\n");
-      pthread_create(&pth, NULL, (void *)CESERVERTEST, (void*)(size_t)TEST_PID);
     }
 #ifdef traptest
 
