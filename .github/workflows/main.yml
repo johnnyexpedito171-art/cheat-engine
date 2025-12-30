@@ -2,43 +2,42 @@ name: Build CEServer Android Release
 
 on:
   push:
-    branches:
-      - main
-      - master
+    branches: [ main, master ]
   workflow_dispatch:
 
 jobs:
   build-android:
-    name: Build Android CEServer
     runs-on: ubuntu-latest
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Setup Android NDK
-        uses: android-tools/setup-ndk@v2
+        uses: nttld/setup-ndk@v1
         with:
-          ndk-version: 'r25c'   # pode ser alterado conforme necessidade
+          ndk-version: r25c
 
-      - name: Prepare build directory
+      - name: Verify NDK
         run: |
-          ls -R .
+          echo "NDK_HOME=$ANDROID_NDK_HOME"
+          ls $ANDROID_NDK_HOME
 
-      - name: Run ndk-build for CEServer Android
-        working-directory: ./Cheat Engine/ceserver/ndk-build/EXECUTABLE
+      - name: Build CEServer (ndk-build)
+        working-directory: Cheat Engine/ceserver/ndk-build/EXECUTABLE
         run: |
-          echo "NDK path: $ANDROID_NDK_HOME"
-          $ANDROID_NDK_HOME/ndk-build NDK_APPLICATION_MK=Application.mk APP_ABI=all \
+          $ANDROID_NDK_HOME/ndk-build \
+            APP_ABI="armeabi-v7a arm64-v8a x86 x86_64" \
+            NDK_DEBUG=0 \
             V=1
 
-      - name: Collect build outputs
+      - name: Collect artifacts
         run: |
-          mkdir -p ./android-artifacts
-          cp ./Cheat Engine/ceserver/ndk-build/EXECUTABLE/libs/* ./android-artifacts/
+          mkdir -p artifacts
+          find "Cheat Engine/ceserver/ndk-build/EXECUTABLE/libs" -type f -exec cp --parents {} artifacts/ \;
 
-      - name: Upload CEServer Android artifacts
-        uses: actions/upload-artifact@v3
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
         with:
           name: ceserver-android-release
-          path: ./android-artifacts/
+          path: artifacts
